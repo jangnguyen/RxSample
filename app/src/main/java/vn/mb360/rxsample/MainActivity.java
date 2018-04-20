@@ -9,6 +9,7 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 
@@ -27,11 +28,12 @@ public class MainActivity extends AppCompatActivity {
         /*
          * ANDROIDHIVE.INFO
          * Android Introduction To Reactive Programming – RxJava, RxAndroid
-         * 2. Introducing Disposable
+         * 2. Introducing Operator
          *
          * Basic Observable, Observer, Subscriber example
          * Observable emits list of animal names
-         * You can see Disposable introduced in this example
+         * filter() operator filters the data by applying a conditional statement.
+         * The data which meets the condition will be emitted and the remaining will be ignored.
          * */
 
         // Observable
@@ -43,6 +45,13 @@ public class MainActivity extends AppCompatActivity {
         animalObservable
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .filter(new Predicate<String>() {
+                    @Override
+                    public boolean test(String s) throws Exception {
+                        // lọc những object nào có chữ f ở đầu
+                        return s.toLowerCase().startsWith("f");
+                    }
+                })
                 .subscribeWith(animalObserver);
     }
 
