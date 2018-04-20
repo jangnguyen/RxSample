@@ -1,21 +1,21 @@
 package vn.mb360.rxsample;
 
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
-
-import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+    private Disposable disposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,32 +24,61 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        /*
+         * ANDROIDHIVE.INFO
+         * Android Introduction To Reactive Programming – RxJava, RxAndroid
+         * 2. Introducing Disposable
+         *
+         * Basic Observable, Observer, Subscriber example
+         * Observable emits list of animal names
+         * You can see Disposable introduced in this example
+         * */
 
-        // CODE SAMPLE is here!
-        Observable<String> myString = Observable.just("Alpha", "Beta", "Gamma", "Delta", "Epsilon");
+        // Observable
+        Observable<String> animalObservable = getAnimalObservable();
 
-        myString.subscribe(s -> Log.d(TAG, s));
-        myString.map(s -> s.length()).subscribe(s -> Log.e(TAG, String.valueOf(s)));
+        // Observer
+        Observer<String> animalObserver = getAnimalObserver();
 
-        Observable<Long> secondIntervals = Observable.interval(1, TimeUnit.SECONDS);
-        secondIntervals.subscribe(s -> Log.i(TAG, "" + s));
-
-        sleep(5000);
+        animalObservable
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(animalObserver);
     }
 
-    public void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    private Observer<String> getAnimalObserver() {
+        return new Observer<String>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                Log.d(TAG, "onSubscribe");
+                disposable = d;
+            }
+
+            @Override
+            public void onNext(String s) {
+                Log.d(TAG, "onNext: Name = " + s);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.e(TAG, "onError: " + e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+                Log.d(TAG, "onComplete: All item emitted.");
+            }
+        };
+    }
+
+    private Observable<String> getAnimalObservable() {
+        return Observable.just("Ant", "Bee", "Cat", "Dog", "Fox");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Sau khi sử dụng disposable này xong 1 lần thì bỏ đi, khi hủy Activity
+        disposable.dispose();
     }
 }
