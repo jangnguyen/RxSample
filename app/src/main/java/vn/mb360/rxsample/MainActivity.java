@@ -5,15 +5,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 
@@ -32,109 +30,97 @@ public class MainActivity extends AppCompatActivity {
 
         /*
          * ANDROIDHIVE.INFO
-         * Android Introduction To Reactive Programming – RxJava, RxAndroid
-         * 5. Custom Data Type, Operators
-         * Basic Observable, Observer, Subscriber example
-         * You can also notice we got rid of the below declarations
-         * Observable<Note> notesObservable = getNotesObservable();
-         * DisposableObserver<Note> notesObserver = getNotesObserver();
+         * RxJava introduction to Operators
+         *
          */
-        compositeDisposable.add(
-                getNotesObservable()
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .map(new Function<Note, Note>() {
-                            @Override
-                            public Note apply(Note note) throws Exception {
-                                note.setNote(note.getNote().toUpperCase());
-                                return note;
-                            }
-                        })
-                        .subscribeWith(getNoteObserver())
-        );
-    }
-
-    private Observable<Note> getNotesObservable() {
-        final List<Note> notes = prepareNotes();
-
-        return Observable.create(new ObservableOnSubscribe<Note>() {
-            @Override
-            public void subscribe(ObservableEmitter<Note> emitter) throws Exception {
-                for (Note note :
-                        notes) {
-                    if (!emitter.isDisposed()) {
-                        emitter.onNext(note);
+        Integer[] numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+        Observable.fromArray(numbers)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new DisposableObserver<Integer>() {
+                    @Override
+                    public void onNext(Integer integer) {
+                        Log.d(TAG, "onNext: number " + integer);
                     }
-                }
 
-                if (!emitter.isDisposed()) {
-                    emitter.onComplete();
-                }
-            }
-        });
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete: all number are emitted.");
+                    }
+                });
+
+        // Instead using range
+        Observable.range(1, 20)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new DisposableObserver<Integer>() {
+                    @Override
+                    public void onNext(Integer integer) {
+                        Log.d(TAG, "onNext: number " + integer);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete.");
+                    }
+                });
+
+        // Ví dụ 3: lựa số chẵn, in ra danh sách console "{number} là số chẵn
+        Observable.range(1, 20)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .filter(new Predicate<Integer>() {
+                    @Override
+                    public boolean test(Integer integer) throws Exception {
+                        return integer % 2 == 0;
+                    }
+                })
+                .map(new Function<Integer, String>() {
+                    @Override
+                    public String apply(Integer integer) throws Exception {
+                        return integer + " là số chẵn";
+                    }
+                })
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        Log.d(TAG, "onNext: " + s);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete");
+                    }
+                });
+
+
     }
 
-    private List<Note> prepareNotes() {
-        List<Note> notes = new ArrayList<>();
-        notes.add(new Note(1, "Làm mấy bài tập về RxJava"));
-        notes.add(new Note(2, "Nhận giao hàng của Tiki"));
-        notes.add(new Note(3, "Viết tài liệu chia sẻ về kiến thức reactive programming"));
-        notes.add(new Note(4, "Dịch CV sang tiếng Anh, lâu lắm oy"));
-        notes.add(new Note(5, "Bóc tem hộp bình nước Lock&Lock ahihi"));
-
-        return notes;
-    }
-
-    // Nơi nhân dữ liệu phát ra
-    private DisposableObserver<Note> getNoteObserver() {
-        return new DisposableObserver<Note>() {
-            @Override
-            public void onNext(Note note) {
-                Log.d(TAG, "onNote: "  + " - + note.getNote());
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                Log.e(TAG, "onError: " + e.getMessage());
-            }
-
-            @Override
-            public void onComplete() {
-                Log.d(TAG, "onComplete: all notes are committed");
-            }
-        };
-    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         // Sau khi sử dụng disposable này xong 1 lần thì bỏ đi, khi hủy Activity
         compositeDisposable.clear();
-    }
-
-    class Note {
-        int id;
-        String note;
-
-        public Note(int id, String note) {
-            this.id = id;
-            this.note = note;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public void setId(int id) {
-            this.id = id;
-        }
-
-        public String getNote() {
-            return note;
-        }
-
-        public void setNote(String note) {
-            this.note = note;
-        }
     }
 }
