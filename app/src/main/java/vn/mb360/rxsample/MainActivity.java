@@ -34,6 +34,10 @@ public class MainActivity extends AppCompatActivity {
         // Just() => 1 to 10 item emit on observable
         Integer[] numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
+        // Emit N emissions
+        // Repeat number of times
+
+
         Observable
                 .fromArray(numbers)
                 .repeat(8)
@@ -61,7 +65,58 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+        // Range
+        Observable.range(0, 69)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Integer>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
 
+                    }
+
+                    @Override
+                    public void onNext(Integer integer) {
+                        Log.d(TAG, "onNext: " + integer);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete");
+                    }
+                });
+
+        // Emit 1 emission
+        Observable
+                .just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Integer>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        // Khong can khoi tao disposable
+                    }
+
+                    @Override
+                    public void onNext(Integer integer) {
+                        Log.d(TAG, "onNext: " + integer);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete");
+                    }
+                });
     }
 
 
