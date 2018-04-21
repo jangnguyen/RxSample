@@ -1,23 +1,42 @@
 package vn.mb360.rxsample;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.TextView;
 
-import io.reactivex.Observable;
+import com.jakewharton.rxbinding2.view.RxView;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.Unbinder;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
+import io.reactivex.functions.Function;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private CompositeDisposable compositeDisposable = new CompositeDisposable();
+    @BindView(R.id.button)
+    Button button;
+    @BindView(R.id.tvOne)
+    TextView tvOne;
+    @BindView(R.id.tvTwo)
+    TextView tvTwo;
 
+    private Disposable disposable;
+    private Unbinder unbinder;
+    private int maxTaps = 0;
+
+    @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,91 +44,42 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        unbinder = ButterKnife.bind(this);
+
         /*
          * ANDROIDHIVE.INFO
-         * RxJava introduction to Operators
-         *
+         * RxJava introduction to Buffer
          */
-
-        // Just() => 1 to 10 item emit on observable
-        Integer[] numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
-
-        // Emit N emissions
-        // Repeat number of times
-
-
-        Observable
-                .fromArray(numbers)
-                .repeat(8)
-                .subscribeOn(Schedulers.io())
+        RxView.clicks(button)
+                .map(new Function<Object, Integer>() {
+                    @Override
+                    public Integer apply(Object o) throws Exception {
+                        return 1;
+                    }
+                })
+                .buffer(5, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Integer>() {
+                .subscribeWith(new Observer<List<Integer>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        // Khong can khoi tao disposable
+                        disposable = d;
                     }
 
+                    @SuppressLint("DefaultLocale")
                     @Override
-                    public void onNext(Integer integer) {
-                        Log.d(TAG, "onNext: " + integer);
+                    public void onNext(List<Integer> integers) {
+                        Log.d(TAG, "onNext: " + integers.size() + " taps received.");
+                        if (integers.size() > 0) {
+                            // So sánh nếu số integer.size lớn hơn thì gán vô ko thì giữ như cũ.
+                            maxTaps = integers.size() > maxTaps ? integers.size() : maxTaps;
+                            tvOne.setText(String.format("Received %d in 5 seconds.", integers.size()));
+                            tvTwo.setText(String.format("Maximum of %d received in this session.", maxTaps));
+                        }
                     }
 
                     @Override
                     public void onError(Throwable e) {
-
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        Log.d(TAG, "onComplete");
-                    }
-                });
-
-        // Range
-        Observable.range(0, 69)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Integer>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-
-                    }
-
-                    @Override
-                    public void onNext(Integer integer) {
-                        Log.d(TAG, "onNext: " + integer);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        Log.d(TAG, "onComplete");
-                    }
-                });
-
-        // Emit 1 emission
-        Observable
-                .just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Integer>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-                        // Khong can khoi tao disposable
-                    }
-
-                    @Override
-                    public void onNext(Integer integer) {
-                        Log.d(TAG, "onNext: " + integer);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
+                        Log.e(TAG, "onError: " + e.getMessage());
                     }
 
                     @Override
@@ -119,11 +89,11 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         // Sau khi sử dụng disposable này xong 1 lần thì bỏ đi, khi hủy Activity
-        compositeDisposable.clear();
+        unbinder.unbind();
+        disposable.dispose();
     }
 }
