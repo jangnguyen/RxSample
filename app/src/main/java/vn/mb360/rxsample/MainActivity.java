@@ -10,17 +10,21 @@ import android.widget.TextView;
 
 import com.jakewharton.rxbinding2.view.RxView;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
-
+import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -57,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
                         return 1;
                     }
                 })
-                .buffer(5, TimeUnit.SECONDS)
+                .buffer(500, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeWith(new Observer<List<Integer>>() {
                     @Override
@@ -87,6 +91,117 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "onComplete");
                     }
                 });
+
+        // Concat()
+        Observable
+                .concat(getMaleObservable(), getFemaleObservable())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<User>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        Log.d(TAG, "CONCAT:");
+                    }
+
+                    @Override
+                    public void onNext(User user) {
+                        Log.d(TAG, user.getName() + " là " + user.getGender());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete");
+                    }
+                });
+
+        // Merge - chay ko theo thu tu
+        Observable
+                .merge(getMaleObservable(), getFemaleObservable())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new Observer<User>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        Log.d(TAG, "MERGE:");
+                    }
+
+                    @Override
+                    public void onNext(User user) {
+                        Log.d(TAG, user.getName() + " là " + user.getGender());
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+    }
+
+    private Observable<User> getMaleObservable() {
+        String[] names = new String[]{"Trúc Xinh Bên Bờ", "Anh Bải", "Đàm Lê Vinh"};
+
+        List<User> users = new ArrayList<>();
+        for (String name : names) {
+            User user = new User();
+            user.setName(name);
+            user.setGender("trai thẳng!");
+            users.add(user);
+        }
+        return Observable
+                .create(new ObservableOnSubscribe<User>() {
+                    @Override
+                    public void subscribe(ObservableEmitter<User> emitter) throws Exception {
+                        for (User user : users) {
+                            if (!emitter.isDisposed()) {
+                                Thread.sleep(1000);
+                                emitter.onNext(user);
+                            }
+                        }
+
+                        if (!emitter.isDisposed()) {
+                            emitter.onComplete();
+                        }
+                    }
+                })
+                .subscribeOn(Schedulers.io());
+    }
+
+    private Observable<User> getFemaleObservable() {
+        String[] names = new String[]{"Thúy Loan", "Chị Dậu", "Bích Nụ", "Mỹ Lệ", "Khánh Thi", "A Dẹo", "Kiều Sương", "Lô Đề"};
+
+        List<User> users = new ArrayList<>();
+        for (String name : names) {
+            User user = new User();
+            user.setName(name);
+            user.setGender("con gái nè mấy mẹ!");
+            users.add(user);
+        }
+        return Observable
+                .create(new ObservableOnSubscribe<User>() {
+                    @Override
+                    public void subscribe(ObservableEmitter<User> emitter) throws Exception {
+                        for (User user : users) {
+                            if (!emitter.isDisposed()) {
+                                Thread.sleep(4500);
+                                emitter.onNext(user);
+                            }
+                        }
+
+                        if (!emitter.isDisposed()) {
+                            emitter.onComplete();
+                        }
+                    }
+                })
+                .subscribeOn(Schedulers.io());
     }
 
     @Override
@@ -95,5 +210,26 @@ public class MainActivity extends AppCompatActivity {
         // Sau khi sử dụng disposable này xong 1 lần thì bỏ đi, khi hủy Activity
         unbinder.unbind();
         disposable.dispose();
+    }
+
+    class User {
+        String name;
+        String gender;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getGender() {
+            return gender;
+        }
+
+        public void setGender(String gender) {
+            this.gender = gender;
+        }
     }
 }
